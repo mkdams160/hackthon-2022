@@ -13,7 +13,7 @@ def z_score(df,decimals):
 
 df = pd.read_csv('historical.csv')
 df = df.assign(logret=np.log(df.close).groupby(df.symbol).diff())
-df = df[~df.symbol.isin(['TUSD','PAX','USDC','USDT','TGBP','TAUD','TCAD','BUSD','DAI','GUSD','XSGD'])]
+df = df[~df.symbol.isin(['TUSD','PAX','USDC','USDT','TGBP','TAUD','TCAD','BUSD','DAI','GUSD','XSGD','WBTC'])]
 
 result = df.groupby(['symbol'], as_index=False).agg({'logret':['mean','std'],'volume':'mean', 'marketCap':['mean','last']})
 
@@ -30,7 +30,7 @@ z_score = z_score(result,2)
 cols = ['market_cap_last_zscore','info_ratio_zscore','vol_makcap_zscore','log_std_zscore']
 z_score = z_score.sort_values(cols, ascending=[False,False,False,True])
 
-final_symbol = z_score.head(21)
+final_symbol = z_score.head(30)
 final_symbol = final_symbol.reset_index()
 
 # Optimization source : https://github.com/otosman/Python-for-Finance/blob/master/Portfolio%20Optimization%20401k.ipynb
@@ -50,7 +50,13 @@ cov = rets.cov() * 365
 syms = len(rets.columns)
 
 #boundaries
-bnds = tuple((.0,.1) for x in range(syms))
+bnds = tuple((.0,.15) for x in range(syms))
+print(bnds)
+bnds = list(bnds)
+bnds[final_symbol[final_symbol['symbol'].str.contains('BTC')].index.values[0]] = (.1,.25)
+bnds[final_symbol[final_symbol['symbol'].str.contains('ETH')].index.values[0]] = (.1,.25)
+bnds[final_symbol[final_symbol['symbol'].str.contains('CRO')].index.values[0]] = (.1,.15)
+bnds = tuple(bnds)
 #constraints
 cons = ({'type':'eq','fun':lambda x: np.sum(x)-1},
        {'type':'ineq','fun':lambda x: x})
